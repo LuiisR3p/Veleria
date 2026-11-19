@@ -38,7 +38,14 @@ npm run build      # genera /dist
 
 ## Despliegue en Vercel
 
-Importa el repositorio en Vercel; detecta Astro automáticamente (`vercel.json` ya está incluido). Para que precios y existencias se mantengan al día, puedes cambiar el comando de build a `npm run sync && npm run build` y programar un redeploy diario con un Deploy Hook.
+Importa el repositorio en Vercel; detecta Astro automáticamente. `vercel.json` ya sincroniza el catálogo de Shopify en cada publicación e incluye las redirecciones de las direcciones viejas de Shopify (`/products/…`, `/collections/…`, `/pages/…`).
+
+| Variable | Para qué | Valor |
+|---|---|---|
+| `PUBLIC_SHOPIFY_URL` | Dirección de la tienda Shopify (checkout, cuenta, imágenes) | Hoy `https://www.miveleria.com`; tras el cambio, `https://tienda.miveleria.com` |
+| `SITE_URL` | Dominio oficial para Google (canonical y sitemap) | `https://www.miveleria.com` (ya por defecto) |
+
+**Para que este sitio quede en www.miveleria.com, sigue [docs/PASAR-A-WWW.md](docs/PASAR-A-WWW.md).**
 
 ## Estructura
 

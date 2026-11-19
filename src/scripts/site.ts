@@ -14,7 +14,7 @@ type CartItem = {
   url: string;
 };
 
-const STORE = "https://www.miveleria.com";
+const STORE = (import.meta.env.PUBLIC_SHOPIFY_URL || "https://www.miveleria.com").replace(/\/$/, "");
 const WA = "573125253893";
 const KEY = "mv-cart-v1";
 const fmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });

@@ -34,7 +34,11 @@ export type Collection = {
   products: string[];
 };
 
-export const STORE = "https://www.miveleria.com";
+/* Dirección de la tienda Shopify (checkout, cuenta, políticas e imágenes).
+   Hoy es www.miveleria.com. Cuando este sitio pase a www.miveleria.com,
+   Shopify se mueve a tienda.miveleria.com y basta con cambiar la variable
+   PUBLIC_SHOPIFY_URL en Vercel. */
+export const STORE = (import.meta.env.PUBLIC_SHOPIFY_URL || "https://www.miveleria.com").replace(/\/$/, "");
 export const SITE = {
   name: "Mi Velería",
   tagline: "Crea tu vela con estilo",

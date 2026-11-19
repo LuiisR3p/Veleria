@@ -6,7 +6,9 @@
 
 import { writeFile, mkdir } from "node:fs/promises";
 
-const STORE = process.env.STORE_URL ?? "https://www.miveleria.com";
+const STORE = (process.env.PUBLIC_SHOPIFY_URL || process.env.STORE_URL || "https://www.miveleria.com").replace(/\/$/, "");
+// --soft: si Shopify no responde, se conserva el catálogo anterior en vez de romper la publicación
+const SOFT = process.argv.includes("--soft");
 const UA = "MiVeleriaCatalogSync/1.0";
 const OUT = new URL("../src/data/catalog.json", import.meta.url);
 
@@ -79,6 +81,7 @@ function plain(html = "") {
 
 const toInt = (v) => (v == null || v === "" ? null : Math.round(Number(v)));
 
+async function main() {
 console.log(`Leyendo catálogo de ${STORE} …`);
 const [products, collections] = await Promise.all([
   paged("/products.json", "products"),
@@ -136,9 +139,18 @@ const prodOut = products.map((p) => {
   };
 });
 
+if (prodOut.length === 0) throw new Error("Shopify devolvió 0 productos");
 await mkdir(new URL("../src/data/", import.meta.url), { recursive: true });
 await writeFile(
   OUT,
   JSON.stringify({ syncedAt: new Date().toISOString(), store: STORE, products: prodOut, collections: collOut })
 );
 console.log(`Listo: ${prodOut.length} productos → src/data/catalog.json`);
+}
+
+try {
+  await main();
+} catch (err) {
+  if (!SOFT) throw err;
+  console.warn(`⚠ No se pudo sincronizar con Shopify (${err.message}). Se publica con el catálogo guardado.`);
+}
