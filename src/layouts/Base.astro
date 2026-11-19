@@ -27,6 +27,7 @@ const org = {
   "@type": "Store",
   name: "Mi Velería Studio",
   url: Astro.site?.toString(),
+  logo: new URL("/brand/icon-512.png", Astro.site).toString(),
   image: siteImg("AE169C34-9C2F-40AF-BEDE-98C071281E8D.png", 600),
   telephone: "+57 312 525 3893",
   email: "hola@miveleria.com",
@@ -51,7 +52,8 @@ const org = {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#FBF8F4" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/favicon-64.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Mi Velería" />

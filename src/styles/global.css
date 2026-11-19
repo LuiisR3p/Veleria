@@ -37,9 +37,9 @@
   --wrap: 1240px;
   --gutter: 16px;
   --ease: cubic-bezier(.2, .7, .2, 1);
-  --header-h: 64px;
+  --header-h: 68px;
 }
-@media (min-width: 720px) { :root { --gutter: 28px; --header-h: 72px; } }
+@media (min-width: 720px) { :root { --gutter: 28px; --header-h: 80px; } }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--header-h) + 16px); }

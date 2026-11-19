@@ -22,6 +22,7 @@ El sitio usa **el catálogo y las fotos reales de la tienda Shopify**. El carrit
 - **Astro** genera un sitio estático: ~376 páginas (inicio, tienda, talleres, 37 colecciones y 335 productos).
 - `scripts/sync-catalog.mjs` lee el catálogo público de Shopify (`/products.json` y `/collections.json`) y lo guarda en `src/data/catalog.json`.
 - Las imágenes se sirven desde el CDN de Shopify, redimensionadas al tamaño exacto (`?width=`) y en WebP/AVIF automático.
+- El logo oficial está en `public/brand/`: se extrajo de su arte original con fondo transparente, en versión oscura (encabezado) y clara (pie de página), más el ícono de pestaña con su llama.
 - El carrito vive en el navegador y "Ir a pagar" abre `miveleria.com/cart/<variante>:<cantidad>,…`, que crea el checkout en Shopify.
 
 ## Uso
