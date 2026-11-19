@@ -1,0 +1,287 @@
+---
+import Base from "../../layouts/Base.astro";
+import ProductCard from "../../components/ProductCard.astro";
+import WaIcon from "../../components/WaIcon.astro";
+import {
+  products, productSlug, productUrl, collections, collectionUrl, collectionProducts,
+  img, srcset, money, SITE, type Product,
+} from "../../lib/catalog";
+
+export function getStaticPaths() {
+  return products.map((p) => ({ params: { slug: productSlug(p) }, props: { p } }));
+}
+const { p } = Astro.props as { p: Product };
+
+const isWorkshop = p.type === "Talleres";
+const first = p.variants.find((v) => v.available) ?? p.variants[0];
+const mainColl = collections.find((c) => p.collections.includes(c.handle) && c.handle !== "insumos")
+  ?? collections.find((c) => p.collections.includes(c.handle));
+const related = (mainColl ? collectionProducts(mainColl) : [])
+  .filter((x) => x.handle !== p.handle && x.available)
+  .slice(0, 4);
+const needsBase = isWorkshop && /indispensable[^.]*taller (inicial|base)/i.test(p.body.replace(/<[^>]+>/g, " "));
+const images = p.images.length ? p.images : [{ src: "", w: 1, h: 1 }];
+const waText = encodeURIComponent(
+  isWorkshop
+    ? `Hola Mi Velería, quiero reservar un cupo en el ${p.title}. ¿Qué fechas tienen disponibles?`
+    : `Hola Mi Velería, tengo una pregunta sobre: ${p.title}`
+);
+
+const jsonld = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: p.title,
+  description: p.excerpt,
+  image: p.images.slice(0, 4).map((i) => img(i.src, 1200)),
+  brand: { "@type": "Brand", name: "Mi Velería" },
+  offers: p.variants.map((v) => ({
+    "@type": "Offer",
+    price: v.price,
+    priceCurrency: "COP",
+    availability: v.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    url: new URL(productUrl(p), Astro.site).toString(),
+    ...(v.title ? { name: v.title } : {}),
+  })),
+};
+---
+<Base
+  title={p.title}
+  description={p.excerpt || `${p.title} en Mi Velería, Bogotá.`}
+  image={img(p.images[0]?.src, 1200)}
+  jsonld={jsonld}
+  preload={p.images[0] ? { href: img(p.images[0].src, 960), srcset: srcset(p.images[0].src, [480, 720, 960, 1200]), sizes: "(min-width: 960px) 50vw, 100vw" } : undefined}
+>
+  <div class="wrap pdp">
+    <nav aria-label="Ruta de navegación">
+      <ol class="crumbs">
+        <li><a href="/">Inicio</a></li>
+        {isWorkshop ? <li><a href="/talleres">Talleres</a></li> : mainColl && <li><a href={collectionUrl(mainColl)}>{mainColl.name}</a></li>}
+        <li aria-current="page">{p.title}</li>
+      </ol>
+    </nav>
+
+    <div class="pdp__grid">
+      <div class="gallery">
+        <ul class="gallery__track" data-gallery>
+          {images.map((im, i) => (
+            <li id={`foto-${i + 1}`}>
+              {im.src ? (
+                <img
+                  src={img(im.src, 960)}
+                  srcset={srcset(im.src, [480, 720, 960, 1200, 1600])}
+                  sizes="(min-width: 960px) 50vw, 100vw"
+                  alt={i === 0 ? p.title : `${p.title}, foto ${i + 1}`}
+                  width="960" height="960"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchpriority={i === 0 ? "high" : undefined}
+                  decoding="async"
+                  data-main={i === 0 ? "" : undefined}
+                />
+              ) : <span class="gallery__empty"></span>}
+            </li>
+          ))}
+        </ul>
+        {images.length > 1 && (
+          <ul class="gallery__thumbs" aria-label="Fotos del producto">
+            {images.map((im, i) => (
+              <li>
+                <a href={`#foto-${i + 1}`} data-thumb={i} aria-label={`Ver foto ${i + 1}`} aria-current={i === 0 ? "true" : undefined}>
+                  <img src={img(im.src, 160)} alt="" width="80" height="80" loading="lazy" decoding="async" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div class="buy">
+        {isWorkshop && <p class="buy__kicker">Taller presencial en Bogotá</p>}
+        <h1 class="buy__title display">{p.title}</h1>
+        <p class="buy__price">
+          <strong data-price>{money(first.price)}</strong>
+          <s data-compare hidden={!(first.compare && first.compare > first.price)}>{first.compare ? money(first.compare) : ""}</s>
+        </p>
+
+        <form
+          class="buy__form"
+          data-add-form
+          data-title={p.title}
+          data-url={productUrl(p)}
+          data-image={img(p.images[0]?.src, 200)}
+          data-price={first.price}
+        >
+          {p.variants.length > 1 ? (
+            <fieldset class="variants">
+              <legend>{p.option ?? "Opción"}</legend>
+              <div class="variants__list">
+                {p.variants.map((v) => (
+                  <label class:list={["vpill", { "is-out": !v.available }]}>
+                    <input
+                      type="radio" name="id" value={v.id}
+                      checked={v.id === first.id}
+                      data-price={v.price}
+                      data-compare={v.compare ?? ""}
+                      data-label={v.title}
+                      data-available={v.available ? "1" : "0"}
+                      data-image={v.image ? img(v.image, 200) : ""}
+                      data-image-large={v.image ? img(v.image, 960) : ""}
+                    />
+                    <span>{v.title}{!v.available && <small> · agotado</small>}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <input type="hidden" name="id" value={first.id} data-price={first.price} />
+          )}
+
+          <div class="buy__row">
+            <div class="qty">
+              <button type="button" data-qty-dec aria-label="Quitar uno">−</button>
+              <input name="qty" type="number" inputmode="numeric" min="1" max="99" value="1" aria-label="Cantidad" />
+              <button type="button" data-qty-inc aria-label="Agregar uno">+</button>
+            </div>
+            <button class="btn btn--primary buy__add" type="submit" data-add-btn disabled={!first.available}>
+              {first.available ? (isWorkshop ? "Reservar mi cupo" : "Agregar al carrito") : "Agotado"}
+            </button>
+          </div>
+        </form>
+
+        <a class="btn btn--outline btn--block" href={`https://wa.me/${SITE.whatsapp}?text=${waText}`} target="_blank" rel="noopener">
+          <WaIcon /> {isWorkshop ? "Consultar fechas por WhatsApp" : "Preguntar por WhatsApp"}
+        </a>
+
+        <ul class="buy__notes">
+          {isWorkshop ? (
+            <>
+              <li>Todos los materiales y herramientas están incluidos.</li>
+              <li>{needsBase ? "Necesitas haber tomado antes el Taller Base de Velas Artesanales." : "No necesitas experiencia previa."}</li>
+              <li>Después de pagar te escribimos para agendar la fecha.</li>
+            </>
+          ) : (
+            <>
+              <li>Envío gratis en compras desde {money(SITE.freeShippingFrom)}.</li>
+              <li>Recógelo en La Alquería, Bogotá, normalmente en 24 horas.</li>
+              <li>Envíos a toda Colombia por transportadora.</li>
+            </>
+          )}
+        </ul>
+
+        {p.body && (
+          <div class="buy__desc">
+            <h2 class="h-lg">{isWorkshop ? "Sobre el taller" : "Descripción"}</h2>
+            <div class="prose" set:html={p.body} />
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+
+  {related.length > 0 && (
+    <section class="section related" aria-labelledby="rel-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="rel-title" class="h-xl">También te puede servir</h2>
+          {mainColl && <a class="link" href={collectionUrl(mainColl)}>Ver {mainColl.name.toLowerCase()}</a>}
+        </div>
+        <ul class="grid-products">
+          {related.map((r) => <li><ProductCard p={r} /></li>)}
+        </ul>
+      </div>
+    </section>
+  )}
+</Base>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-add-form]");
+  if (form) {
+    const fmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+    const money = (n: number) => fmt.format(n).replace(/\s/g, " ");
+    const priceEl = document.querySelector("[data-price]")!;
+    const compareEl = document.querySelector<HTMLElement>("[data-compare]")!;
+    const btn = form.querySelector<HTMLButtonElement>("[data-add-btn]")!;
+    const label = btn.textContent!.trim() === "Agotado" ? "Agregar al carrito" : btn.textContent!.trim();
+    const main = document.querySelector<HTMLImageElement>("[data-main]");
+
+    form.querySelectorAll<HTMLInputElement>('input[type="radio"][name="id"]').forEach((r) =>
+      r.addEventListener("change", () => {
+        const price = Number(r.dataset.price);
+        const compare = Number(r.dataset.compare || 0);
+        priceEl.textContent = money(price);
+        compareEl.hidden = !(compare > price);
+        compareEl.textContent = compare ? money(compare) : "";
+        const ok = r.dataset.available === "1";
+        btn.disabled = !ok;
+        btn.textContent = ok ? label : "Agotado";
+        if (r.dataset.imageLarge && main) {
+          main.srcset = "";
+          main.src = r.dataset.imageLarge;
+          document.querySelector("[data-gallery]")?.scrollTo({ left: 0, behavior: "smooth" });
+        }
+      })
+    );
+
+    const qty = form.querySelector<HTMLInputElement>('input[name="qty"]')!;
+    form.querySelector("[data-qty-dec]")!.addEventListener("click", () => (qty.value = String(Math.max(1, Number(qty.value) - 1))));
+    form.querySelector("[data-qty-inc]")!.addEventListener("click", () => (qty.value = String(Math.min(99, Number(qty.value) + 1))));
+  }
+
+  /* Galería: miniaturas sincronizadas con el carrusel */
+  const track = document.querySelector<HTMLElement>("[data-gallery]");
+  const thumbs = [...document.querySelectorAll<HTMLAnchorElement>("[data-thumb]")];
+  thumbs.forEach((t) =>
+    t.addEventListener("click", (e) => {
+      e.preventDefault();
+      const i = Number(t.dataset.thumb);
+      track?.scrollTo({ left: track.clientWidth * i, behavior: "smooth" });
+    })
+  );
+  track?.addEventListener("scroll", () => {
+    const i = Math.round(track.scrollLeft / track.clientWidth);
+    thumbs.forEach((t, k) => (k === i ? t.setAttribute("aria-current", "true") : t.removeAttribute("aria-current")));
+  }, { passive: true });
+</script>
+
+<style>
+  .pdp { padding-block: 20px 56px; }
+  .pdp__grid { display: grid; gap: 28px; margin-top: 18px; }
+  @media (min-width: 960px) { .pdp__grid { grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: start; } }
+
+  .gallery { min-width: 0; }
+  @media (min-width: 960px) { .gallery { position: sticky; top: calc(var(--header-h) + 20px); } }
+  .gallery__track { list-style: none; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: var(--r-lg); background: var(--arena); }
+  .gallery__track::-webkit-scrollbar { display: none; }
+  .gallery__track li { flex: 0 0 100%; scroll-snap-align: start; aspect-ratio: 1; }
+  .gallery__track img, .gallery__empty { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery__thumbs { list-style: none; padding: 0; display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+  .gallery__thumbs a { display: block; width: 72px; height: 72px; border-radius: 12px; overflow: hidden; border: 2px solid transparent; }
+  .gallery__thumbs a[aria-current="true"] { border-color: var(--cacao); }
+  .gallery__thumbs img { width: 100%; height: 100%; object-fit: cover; }
+
+  .buy { display: grid; gap: 16px; align-content: start; }
+  .buy__kicker { color: var(--canela); font-weight: 600; font-size: var(--t-sm); }
+  .buy__title { font-size: var(--t-2xl); line-height: 1.08; }
+  .buy__price { display: flex; align-items: baseline; gap: 12px; }
+  .buy__price strong { font-size: 1.75rem; }
+  .buy__price s { color: var(--tinta-suave); }
+  .buy__form { display: grid; gap: 18px; padding-top: 4px; }
+  .variants { border: 0; padding: 0; margin: 0; }
+  .variants legend { font-weight: 600; font-size: var(--t-sm); margin-bottom: 10px; }
+  .variants__list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .vpill { position: relative; }
+  .vpill input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .vpill span { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--linea-fuerte); font-size: var(--t-sm); font-weight: 500; }
+  .vpill input:hover + span { border-color: var(--cacao); }
+  .vpill input:checked + span { background: var(--cacao); border-color: var(--cacao); color: var(--cera); }
+  .vpill input:focus-visible + span { outline: 2px solid var(--canela); outline-offset: 2px; }
+  .vpill.is-out span { color: var(--tinta-suave); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .vpill.is-out input:checked + span { color: var(--cera); }
+  .buy__row { display: flex; gap: 12px; }
+  .buy__row .qty { height: 48px; }
+  .buy__add { flex: 1; }
+  .buy__notes { list-style: none; padding: 16px 0 0; display: grid; gap: 8px; font-size: var(--t-sm); color: var(--tinta-suave); border-top: 1px solid var(--linea); }
+  .buy__notes li { padding-left: 22px; position: relative; }
+  .buy__notes li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 9px; height: 9px; border-radius: 50%; background: var(--oro); }
+  .buy__desc { margin-top: 16px; padding-top: 24px; border-top: 1px solid var(--linea); display: grid; gap: 14px; }
+  .related { background: var(--arena); }
+</style>

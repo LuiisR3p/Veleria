@@ -1,0 +1,92 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import CartDrawer from "../components/CartDrawer.astro";
+import SearchDialog from "../components/SearchDialog.astro";
+import { siteImg } from "../lib/catalog";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  jsonld?: Record<string, unknown> | Record<string, unknown>[];
+  preload?: { href: string; srcset?: string; sizes?: string };
+}
+const {
+  title,
+  description = "Insumos, moldes y talleres de velas en Bogotá. Ceras, fragancias, colorantes, pabilos y envases para crear tus velas artesanales o tu propio emprendimiento.",
+  image = siteImg("IMG_3047.heic", 1200),
+  jsonld,
+  preload,
+} = Astro.props;
+const fullTitle = title ? `${title} | Mi Velería` : "Mi Velería | Insumos, moldes y talleres de velas en Bogotá";
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const org = {
+  "@context": "https://schema.org",
+  "@type": "Store",
+  name: "Mi Velería Studio",
+  url: Astro.site?.toString(),
+  image: siteImg("AE169C34-9C2F-40AF-BEDE-98C071281E8D.png", 600),
+  telephone: "+57 312 525 3893",
+  email: "hola@miveleria.com",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Carrera 52 C # 39 A Sur 09, La Alquería",
+    addressLocality: "Bogotá",
+    addressCountry: "CO",
+  },
+  sameAs: [
+    "https://www.instagram.com/miveleriastudio",
+    "https://www.tiktok.com/@mi.veleria.studio",
+  ],
+};
+---
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#FBF8F4" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mi Velería" />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://www.miveleria.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Young+Serif&display=swap" />
+    {preload && <link rel="preload" as="image" href={preload.href} imagesrcset={preload.srcset} imagesizes={preload.sizes} fetchpriority="high" />}
+
+    <script type="application/ld+json" set:html={JSON.stringify(org)} />
+    {jsonld && <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />}
+  </head>
+  <body>
+    <a class="skip" href="#contenido">Saltar al contenido</a>
+    <Header />
+    <main id="contenido">
+      <slot />
+    </main>
+    <Footer />
+    <CartDrawer />
+    <SearchDialog />
+    <script>
+      import "../scripts/site.ts";
+    </script>
+  </body>
+</html>
+
+<style>
+  body { min-height: 100dvh; display: flex; flex-direction: column; }
+  main { flex: 1; }
+</style>

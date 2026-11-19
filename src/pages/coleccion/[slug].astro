@@ -1,0 +1,49 @@
+---
+import Base from "../../layouts/Base.astro";
+import ShopGrid from "../../components/ShopGrid.astro";
+import { collections, collectionProducts, collectionUrl, NAV, img } from "../../lib/catalog";
+
+export function getStaticPaths() {
+  return collections.map((c) => ({ params: { slug: c.slug }, props: { c } }));
+}
+const { c } = Astro.props as { c: (typeof collections)[number] };
+const items = collectionProducts(c);
+const group = NAV.find((n) => n.children?.includes(c.handle));
+const siblings = (group?.children ?? [])
+  .map((h) => collections.find((x) => x.handle === h))
+  .filter((x): x is NonNullable<typeof x> => !!x);
+const description =
+  c.description ||
+  `${c.name} para hacer velas artesanales. ${items.length} productos disponibles en Mi Velería, Bogotá, con envíos a toda Colombia.`;
+---
+<Base title={c.name} description={description} image={c.image ? img(c.image, 1200) : undefined}>
+  <div class="wrap page">
+    <nav aria-label="Ruta de navegación">
+      <ol class="crumbs">
+        <li><a href="/">Inicio</a></li>
+        {group && <li><a href={group.href}>{group.title}</a></li>}
+        <li aria-current="page">{c.name}</li>
+      </ol>
+    </nav>
+    <header class="page__head">
+      <h1 class="h-xl">{c.name}</h1>
+      {c.description && <p class="muted">{c.description}</p>}
+    </header>
+
+    {siblings.length > 1 && (
+      <nav class="chips siblings" aria-label={`Otras categorías de ${group!.title.toLowerCase()}`}>
+        {siblings.map((s) => (
+          <a class="chip" href={collectionUrl(s)} aria-current={s.handle === c.handle ? "page" : undefined}>{s.name}</a>
+        ))}
+      </nav>
+    )}
+
+    <ShopGrid items={items} />
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: 20px 80px; }
+  .page__head { display: grid; gap: 10px; margin: 20px 0 24px; max-width: 64ch; }
+  .siblings { margin-bottom: 28px; }
+</style>

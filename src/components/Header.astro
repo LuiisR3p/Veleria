@@ -1,0 +1,199 @@
+---
+import Logo from "./Logo.astro";
+import { NAV, getCollection, collectionUrl, collections, img, money, SITE } from "../lib/catalog";
+
+const current = Astro.url.pathname;
+const groups = NAV.map((g) => ({
+  ...g,
+  items: (g.children ?? [])
+    .map((h) => getCollection(h))
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .map((c) => ({ ...c, slug: collections.find((x) => x.handle === c.handle)!.slug, name: collections.find((x) => x.handle === c.handle)!.name })),
+}));
+---
+<div class="announce">
+  <div class="wrap announce__inner">
+    <p>Envío gratis desde {money(SITE.freeShippingFrom)}</p>
+    <p class="announce__extra">Recoge tu pedido en La Alquería, Bogotá, en 24 horas</p>
+  </div>
+</div>
+
+<header class="hdr" data-header>
+  <div class="wrap hdr__inner">
+    <button class="icon-btn hdr__menu" type="button" aria-controls="mobile-nav" aria-expanded="false" data-open-mobile>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7h17M3.5 12h17M3.5 17h17" /></svg>
+      <span class="sr-only">Abrir menú</span>
+    </button>
+
+    <a class="hdr__logo" href="/" aria-label="Mi Velería Studio, inicio"><Logo /></a>
+
+    <nav class="nav" aria-label="Principal">
+      <ul class="nav__list">
+        {groups.map((g) => (
+          <li class:list={["nav__item", { "has-panel": g.items.length }]}>
+            {g.items.length ? (
+              <>
+                <button class="nav__link" type="button" aria-expanded="false" aria-controls={`panel-${g.id}`} data-nav-trigger>
+                  {g.title}
+                  <svg class="nav__caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" /></svg>
+                </button>
+                <div class="panel" id={`panel-${g.id}`} data-nav-panel>
+                  <div class="wrap panel__inner">
+                    <div class="panel__intro">
+                      <p class="panel__title display">{g.title}</p>
+                      <p class="muted">{g.blurb}</p>
+                      <a class="link" href={g.href}>Ver todo en {g.title.toLowerCase()}</a>
+                    </div>
+                    <ul class="panel__list">
+                      {g.items.map((c) => (
+                        <li>
+                          <a href={collectionUrl(c)}>
+                            {c.image && <img src={img(c.image, 96)} alt="" width="48" height="48" loading="lazy" decoding="async" />}
+                            <span>{c.name}<small>{c.products.length} productos</small></span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <a class="nav__link" href={g.href} aria-current={current.startsWith(g.href) ? "page" : undefined}>{g.title}</a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="hdr__actions">
+      <button class="icon-btn" type="button" data-open-search aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+        <span class="sr-only">Buscar productos</span>
+      </button>
+      <button class="cart-btn" type="button" data-open-cart aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8.5h13l-1.1 11.2a1 1 0 0 1-1 .8H7.6a1 1 0 0 1-1-.8L5.5 8.5Z" /><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" /></svg>
+        <span class="sr-only">Abrir carrito,</span>
+        <span class="cart-btn__count" data-cart-count aria-live="polite">0</span>
+        <span class="sr-only">productos</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Menú móvil -->
+<div class="drawer drawer--left" id="mobile-nav" data-mobile-nav hidden>
+  <div class="drawer__scrim" data-close-mobile></div>
+  <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="Menú">
+    <div class="drawer__head">
+      <Logo />
+      <button class="icon-btn" type="button" data-close-mobile>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        <span class="sr-only">Cerrar menú</span>
+      </button>
+    </div>
+    <ul class="mnav">
+      {groups.map((g) => (
+        <li>
+          {g.items.length ? (
+            <details>
+              <summary>{g.title}</summary>
+              <ul>
+                <li><a href={g.href}>Ver todo</a></li>
+                {g.items.map((c) => <li><a href={collectionUrl(c)}>{c.name}</a></li>)}
+              </ul>
+            </details>
+          ) : (
+            <a href={g.href}>{g.title}</a>
+          )}
+        </li>
+      ))}
+      <li><a href="/tienda">Toda la tienda</a></li>
+      <li><a href="/#guia-ceras">Guía de ceras</a></li>
+      <li><a href="/#visitanos">Visítanos</a></li>
+    </ul>
+    <a class="btn btn--primary btn--block" href={`https://wa.me/${SITE.whatsapp}`} target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+  </div>
+</div>
+
+<style>
+  .announce { background: var(--cacao); color: var(--roble-claro); font-size: var(--t-xs); }
+  .announce__inner { display: flex; justify-content: center; gap: 32px; min-height: 34px; align-items: center; text-align: center; }
+  .announce__extra { display: none; }
+  @media (min-width: 760px) { .announce__extra { display: block; } .announce__inner { justify-content: space-between; } }
+
+  .hdr {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(251, 248, 244, .92);
+    backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    border-bottom: 1px solid var(--linea);
+  }
+  .hdr__inner { height: var(--header-h); display: flex; align-items: center; gap: 12px; }
+  .hdr__logo { text-decoration: none; margin-right: auto; }
+  .hdr__actions { display: flex; align-items: center; gap: 4px; }
+
+  .cart-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  .cart-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px 0 10px; border-radius: 999px; border: 0; background: var(--cacao); color: var(--cera); cursor: pointer; }
+  .cart-btn:hover { background: var(--cacao-2); }
+  .cart-btn__count { min-width: 20px; text-align: center; font-weight: 700; font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+  .cart-btn.is-bump { animation: bump .5s var(--ease); }
+  @keyframes bump { 35% { transform: scale(1.12); } }
+
+  .hdr__menu { margin-left: -10px; }
+  .nav { display: none; }
+  @media (min-width: 1080px) {
+    .hdr__menu { display: none; }
+    .hdr__logo { margin-right: 0; }
+    .nav { display: block; margin: 0 auto; }
+  }
+  .nav__list { display: flex; gap: 2px; list-style: none; padding: 0; }
+  .nav__link {
+    display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px; border-radius: 999px;
+    border: 0; background: none; cursor: pointer; text-decoration: none; font-weight: 500; font-size: var(--t-sm);
+  }
+  .nav__link:hover, .nav__link[aria-expanded="true"], .nav__link[aria-current="page"] { background: var(--arena); }
+  .nav__caret { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; transition: transform .2s; }
+  .nav__link[aria-expanded="true"] .nav__caret { transform: rotate(180deg); }
+
+  .panel {
+    position: absolute; left: 0; right: 0; top: 100%;
+    background: var(--cera); border-bottom: 1px solid var(--linea);
+    box-shadow: 0 30px 50px -30px rgba(51, 32, 28, .35);
+    visibility: hidden; opacity: 0; transform: translateY(-6px);
+    transition: opacity .18s, transform .22s var(--ease), visibility 0s .22s;
+  }
+  .panel.is-open { visibility: visible; opacity: 1; transform: none; transition: opacity .18s, transform .22s var(--ease), visibility 0s; }
+  .panel__inner { display: grid; grid-template-columns: 260px 1fr; gap: 48px; padding-block: 32px 40px; }
+  .panel__intro { display: grid; align-content: start; gap: 10px; }
+  .panel__title { font-size: var(--t-xl); }
+  .panel__list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; }
+  .panel__list a { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--r-sm); text-decoration: none; }
+  .panel__list a:hover { background: var(--arena); }
+  .panel__list img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: var(--arena); flex: none; }
+  .panel__list span { display: grid; font-weight: 500; line-height: 1.3; }
+  .panel__list small { font-weight: 400; font-size: var(--t-xs); color: var(--tinta-suave); }
+
+  /* Cajones (menú móvil y carrito comparten estructura) */
+  :global(.drawer) { position: fixed; inset: 0; z-index: 100; }
+  :global(.drawer[hidden]) { display: none; }
+  :global(.drawer__scrim) { position: absolute; inset: 0; background: rgba(51, 32, 28, .45); opacity: 0; transition: opacity .25s; }
+  :global(.drawer__panel) {
+    position: absolute; top: 0; bottom: 0; right: 0; width: min(100%, 440px);
+    background: var(--cera); display: flex; flex-direction: column; gap: 16px;
+    padding: 16px 20px 24px; overflow-y: auto;
+    transform: translateX(100%); transition: transform .32s var(--ease);
+  }
+  :global(.drawer--left .drawer__panel) { right: auto; left: 0; transform: translateX(-100%); }
+  :global(.drawer.is-open .drawer__scrim) { opacity: 1; }
+  :global(.drawer.is-open .drawer__panel) { transform: none; }
+  :global(.drawer__head) { display: flex; align-items: center; justify-content: space-between; }
+
+  .mnav { list-style: none; padding: 0; flex: 1; }
+  .mnav > li { border-bottom: 1px solid var(--linea); }
+  .mnav a, .mnav summary { display: flex; justify-content: space-between; align-items: center; padding: 14px 2px; text-decoration: none; font-size: 1.1rem; font-weight: 500; cursor: pointer; list-style: none; }
+  .mnav summary::-webkit-details-marker { display: none; }
+  .mnav summary::after { content: "+"; font-size: 1.4rem; font-weight: 300; }
+  .mnav details[open] summary::after { content: "–"; }
+  .mnav details ul { list-style: none; padding: 0 0 12px 12px; }
+  .mnav details a { font-size: 1rem; font-weight: 400; padding: 9px 2px; color: var(--tinta-suave); }
+</style>

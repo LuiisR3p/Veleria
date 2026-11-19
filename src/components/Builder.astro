@@ -1,0 +1,255 @@
+---
+import { builderSteps, getProduct, img, money, productUrl } from "../lib/catalog";
+const steps = builderSteps();
+const kit = getProduct("kit-inicial-para-velas");
+---
+<section class="builder" id="primera-vela" aria-labelledby="builder-title">
+  <div class="wrap">
+    <div class="builder__head">
+      <h2 id="builder-title" class="h-xl">Arma tu primera vela</h2>
+      <p class="builder__lede">Elige un producto en cada paso y agrégalos todos al carrito de una vez. Son los básicos de una vela de molde: cera, molde, fragancia, color y pabilo.</p>
+    </div>
+
+    <div class="builder__grid" data-builder>
+      <ol class="bsteps" role="tablist" aria-label="Pasos">
+        {steps.map((s, i) => (
+          <li>
+            <button class="bstep" type="button" role="tab" id={`tab-${s.id}`} aria-controls={`pane-${s.id}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-step={s.id}>
+              <span class="bstep__n" aria-hidden="true">{i + 1}</span>
+              <span class="bstep__t">{s.title}<small data-step-choice={s.id}>Sin elegir</small></span>
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <div class="bpanes">
+        {steps.map((s, i) => (
+          <div class="bpane" role="tabpanel" id={`pane-${s.id}`} aria-labelledby={`tab-${s.id}`} hidden={i !== 0} data-pane={s.id}>
+            <p class="bpane__help">{s.help}</p>
+            <ul class="bopts">
+              {s.options.map((o) => (
+                <li>
+                  <button class="bopt" type="button" aria-pressed="false" data-option={o.productId} data-step-id={s.id}>
+                    <img src={o.image} alt="" width="120" height="120" loading="lazy" decoding="async" />
+                    <span class="bopt__t">{o.title}</span>
+                    <span class="bopt__p">{o.variants.length > 1 ? "Desde " : ""}{money(Math.min(...o.variants.filter((v) => v.available).map((v) => v.price)))}</span>
+                    {o.hint && <span class="bopt__hint">{o.hint}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div class="bvar" data-variant-wrap={s.id} hidden>
+              <label class="bvar__label" for={`var-${s.id}`}>Presentación</label>
+              <select id={`var-${s.id}`} data-variant-select={s.id}></select>
+            </div>
+            {i < steps.length - 1 && (
+              <button class="btn btn--light btn--sm bnext" type="button" data-next={steps[i + 1].id}>Siguiente: {steps[i + 1].title.toLowerCase()}</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <aside class="brecipe" aria-labelledby="recipe-title">
+        <h3 id="recipe-title" class="brecipe__title">Tu receta</h3>
+        <ul class="brecipe__list" data-recipe>
+          {steps.map((s) => (
+            <li data-recipe-row={s.id}><span>{s.title}</span><em>Por elegir</em></li>
+          ))}
+        </ul>
+        <p class="brecipe__total"><span>Total</span><strong data-recipe-total>{money(0)}</strong></p>
+        <button class="btn btn--primary btn--block" type="button" data-recipe-add disabled>Agregar al carrito</button>
+        <p class="brecipe__note" data-recipe-note>Elige al menos la cera y el molde.</p>
+        {kit && (
+          <a class="brecipe__kit" href={productUrl(kit)}>
+            <img src={img(kit.images[0]?.src, 160)} alt="" width="64" height="64" loading="lazy" />
+            <span>¿Necesitas también las herramientas? El <strong>Kit inicial</strong> trae estufa, olla, termómetro y gramera por {money(kit.priceMin)}.</span>
+          </a>
+        )}
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script type="application/json" id="builder-data" set:html={JSON.stringify(steps.map((s) => ({ id: s.id, title: s.title, options: s.options })))}></script>
+
+<script>
+  type V = { id: number; title: string | null; price: number; available: boolean; image: string | null };
+  type O = { productId: number; handle: string; url: string; title: string; fullTitle: string; image: string; variants: V[] };
+  type S = { id: string; title: string; options: O[] };
+
+  const root = document.querySelector<HTMLElement>("[data-builder]");
+  const data: S[] = JSON.parse(document.getElementById("builder-data")?.textContent || "[]");
+  const fmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  const money = (n: number) => fmt.format(n).replace(/\s/g, " ");
+  const chosen: Record<string, { o: O; v: V } | undefined> = {};
+
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-step]")];
+    const show = (id: string) => {
+      tabs.forEach((t) => {
+        const on = t.dataset.step === id;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      root.querySelectorAll<HTMLElement>("[data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== id));
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener("click", () => show(t.dataset.step!));
+      t.addEventListener("keydown", (e) => {
+        const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        const n = tabs[(i + d + tabs.length) % tabs.length];
+        n.focus();
+        show(n.dataset.step!);
+      });
+    });
+    root.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((b) =>
+      b.addEventListener("click", () => {
+        show(b.dataset.next!);
+        root.querySelector<HTMLElement>(`[data-step="${b.dataset.next}"]`)?.focus();
+      })
+    );
+
+    const update = () => {
+      let total = 0;
+      for (const s of data) {
+        const c = chosen[s.id];
+        const row = root.querySelector(`[data-recipe-row="${s.id}"]`)!;
+        const em = row.querySelector("em")!;
+        const label = root.querySelector(`[data-step-choice="${s.id}"]`)!;
+        if (c) {
+          total += c.v.price;
+          em.textContent = `${c.o.title}${c.v.title ? `, ${c.v.title}` : ""}`;
+          row.classList.add("is-set");
+          label.textContent = c.o.title;
+          root.querySelector(`[data-step="${s.id}"]`)?.classList.add("is-done");
+        } else {
+          em.textContent = "Por elegir";
+          row.classList.remove("is-set");
+          label.textContent = "Sin elegir";
+          root.querySelector(`[data-step="${s.id}"]`)?.classList.remove("is-done");
+        }
+      }
+      root.querySelector("[data-recipe-total]")!.textContent = money(total);
+      const ready = !!chosen.cera && !!chosen.molde;
+      const add = root.querySelector<HTMLButtonElement>("[data-recipe-add]")!;
+      add.disabled = !ready;
+      const n = Object.values(chosen).filter(Boolean).length;
+      add.textContent = ready ? `Agregar ${n} productos al carrito` : "Agregar al carrito";
+      root.querySelector("[data-recipe-note]")!.textContent = ready
+        ? "Puedes cambiar cualquier paso antes de agregarlo."
+        : "Elige al menos la cera y el molde.";
+    };
+
+    root.querySelectorAll<HTMLButtonElement>("[data-option]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const stepId = btn.dataset.stepId!;
+        const step = data.find((s) => s.id === stepId)!;
+        const o = step.options.find((x) => String(x.productId) === btn.dataset.option)!;
+        const pressed = btn.getAttribute("aria-pressed") === "true";
+        root.querySelectorAll(`[data-step-id="${stepId}"]`).forEach((b) => b.setAttribute("aria-pressed", "false"));
+        const wrap = root.querySelector<HTMLElement>(`[data-variant-wrap="${stepId}"]`)!;
+        const sel = root.querySelector<HTMLSelectElement>(`[data-variant-select="${stepId}"]`)!;
+        if (pressed) {
+          chosen[stepId] = undefined;
+          wrap.hidden = true;
+        } else {
+          btn.setAttribute("aria-pressed", "true");
+          const avail = o.variants.filter((v) => v.available);
+          chosen[stepId] = { o, v: avail[0] };
+          wrap.hidden = avail.length < 2;
+          sel.innerHTML = "";
+          for (const v of avail) {
+            const op = document.createElement("option");
+            op.value = String(v.id);
+            op.textContent = `${v.title ?? "Única"}: ${money(v.price)}`;
+            sel.append(op);
+          }
+          sel.onchange = () => {
+            const v = avail.find((x) => String(x.id) === sel.value)!;
+            chosen[stepId] = { o, v };
+            update();
+          };
+        }
+        update();
+      })
+    );
+
+    root.querySelector("[data-recipe-add]")!.addEventListener("click", () => {
+      const items = Object.values(chosen)
+        .filter((c): c is { o: O; v: V } => !!c)
+        .map(({ o, v }) => ({
+          id: v.id,
+          qty: 1,
+          title: o.fullTitle,
+          variant: v.title,
+          price: v.price,
+          image: o.image,
+          url: o.url,
+        }));
+      (window as any).mvAddToCart?.(items);
+    });
+  }
+</script>
+
+<style>
+  .builder { background: var(--cacao); color: #F3E8DF; padding-block: clamp(64px, 9vw, 120px); }
+  .builder__head { display: grid; gap: 14px; margin-bottom: 40px; }
+  @media (min-width: 900px) { .builder__head { grid-template-columns: 1fr 1fr; align-items: end; gap: 48px; } }
+  .builder__lede { color: #D8C6BA; max-width: 52ch; }
+  .builder__grid { display: grid; gap: 24px; }
+  @media (min-width: 1000px) { .builder__grid { grid-template-columns: 220px 1fr 320px; gap: 32px; align-items: start; } }
+
+  .bsteps { list-style: none; padding: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); }
+  .bsteps::-webkit-scrollbar { display: none; }
+  @media (min-width: 1000px) { .bsteps { flex-direction: column; margin: 0; padding: 0; overflow: visible; } }
+  .bstep {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: var(--r-md);
+    border: 1.5px solid rgba(243, 232, 223, .16); background: transparent; color: inherit; cursor: pointer; text-align: left; white-space: nowrap;
+  }
+  .bstep:hover { border-color: rgba(243, 232, 223, .4); }
+  .bstep[aria-selected="true"] { background: var(--cera); color: var(--cacao); border-color: var(--cera); }
+  .bstep__n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--display); border: 1.5px solid currentColor; }
+  .bstep.is-done .bstep__n { background: var(--oro); border-color: var(--oro); color: var(--cacao); }
+  .bstep__t { display: grid; font-weight: 600; line-height: 1.2; }
+  .bstep__t small { font-weight: 400; font-size: var(--t-xs); opacity: .7; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+
+  .bpane__help { color: #D8C6BA; margin-bottom: 18px; max-width: 60ch; }
+  .bopts { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .bopt {
+    position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 4px; padding: 8px 8px 12px;
+    border-radius: var(--r-md); border: 1.5px solid rgba(243, 232, 223, .14); background: rgba(243, 232, 223, .05);
+    color: inherit; cursor: pointer; text-align: left; transition: border-color .15s, background-color .15s;
+  }
+  .bopt:hover { border-color: rgba(243, 232, 223, .45); }
+  .bopt[aria-pressed="true"] { border-color: var(--oro); background: rgba(196, 151, 63, .16); }
+  .bopt[aria-pressed="true"]::after {
+    content: ""; position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--oro) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='%2333201C' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+  }
+  .bopt img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: var(--arena); margin-bottom: 6px; }
+  .bopt__t { font-weight: 600; font-size: var(--t-sm); line-height: 1.25; }
+  .bopt__p { font-size: var(--t-sm); color: #D8C6BA; }
+  .bopt__hint { font-size: var(--t-xs); color: var(--oro); font-weight: 600; }
+  .bvar { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+  .bvar[hidden] { display: none; }
+  .bvar__label { font-size: var(--t-sm); color: #D8C6BA; }
+  .bvar select { min-height: 42px; padding: 0 12px; border-radius: var(--r-sm); border: 1.5px solid rgba(243, 232, 223, .3); background: var(--cacao-2); color: inherit; }
+  .bnext { margin-top: 22px; }
+
+  .brecipe { background: var(--cera); color: var(--cacao); border-radius: var(--r-lg); padding: 24px; display: grid; gap: 14px; }
+  @media (min-width: 1000px) { .brecipe { position: sticky; top: calc(var(--header-h) + 20px); } }
+  .brecipe__title { font-family: var(--display); font-size: var(--t-xl); }
+  .brecipe__list { list-style: none; padding: 0; display: grid; }
+  .brecipe__list li { display: grid; grid-template-columns: 90px 1fr; gap: 8px; padding: 9px 0; border-bottom: 1px dashed var(--linea-fuerte); font-size: var(--t-sm); }
+  .brecipe__list span { font-weight: 600; }
+  .brecipe__list em { font-style: normal; color: var(--tinta-suave); }
+  .brecipe__list li.is-set em { color: var(--cacao); }
+  .brecipe__total { display: flex; justify-content: space-between; align-items: baseline; }
+  .brecipe__total strong { font-size: 1.5rem; }
+  .brecipe__note { font-size: var(--t-xs); color: var(--tinta-suave); text-align: center; }
+  .brecipe__kit { display: flex; gap: 12px; align-items: center; padding-top: 14px; border-top: 1px solid var(--linea); font-size: var(--t-sm); text-decoration: none; }
+  .brecipe__kit img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex: none; }
+  .brecipe__kit:hover strong { text-decoration: underline; }
+</style>

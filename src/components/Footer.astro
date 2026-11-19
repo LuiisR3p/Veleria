@@ -1,0 +1,68 @@
+---
+import WaIcon from "./WaIcon.astro";
+import { SITE, siteImg, STORE } from "../lib/catalog";
+const year = new Date().getFullYear();
+---
+<footer class="ftr">
+  <div class="wrap ftr__top">
+    <div class="ftr__brand">
+      <img src={siteImg("AE169C34-9C2F-40AF-BEDE-98C071281E8D.png", 450)} alt="Mi Velería Studio, crea tu vela con estilo" width="225" height="150" loading="lazy" decoding="async" />
+    </div>
+    <div class="ftr__cols">
+      <div>
+        <p class="ftr__h">Tienda</p>
+        <ul>
+          <li><a href="/talleres">Talleres</a></li>
+          <li><a href="/tienda?grupo=insumos">Insumos</a></li>
+          <li><a href="/tienda?grupo=moldes">Moldes</a></li>
+          <li><a href="/tienda?grupo=envases">Envases</a></li>
+          <li><a href="/coleccion/kit-para-velas">Kit inicial</a></li>
+          <li><a href="/coleccion/velas-aromaticas-mi-veleria">Velas Mi Velería</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="ftr__h">Ayuda</p>
+        <ul>
+          <li><a href="/#preguntas">Preguntas frecuentes</a></li>
+          <li><a href={`${STORE}/policies/shipping-policy`} rel="noopener">Política de envío</a></li>
+          <li><a href={`${STORE}/policies/refund-policy`} rel="noopener">Cambios y devoluciones</a></li>
+          <li><a href={`${STORE}/policies/terms-of-service`} rel="noopener">Términos del servicio</a></li>
+          <li><a href={`${STORE}/account`} rel="noopener">Mi cuenta</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="ftr__h">Visítanos</p>
+        <address>
+          Mi Velería Studio<br />{SITE.address}
+        </address>
+        <p><a href={`mailto:${SITE.email}`}>{SITE.email}</a></p>
+        <a class="ftr__wa" href={`https://wa.me/${SITE.whatsapp}`} target="_blank" rel="noopener"><WaIcon /> {SITE.whatsappLabel}</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap ftr__bottom">
+    <p>© {year} Mi Velería. Bogotá, Colombia.</p>
+    <ul class="ftr__social">
+      <li><a href={SITE.instagram} target="_blank" rel="noopener">Instagram</a></li>
+      <li><a href={SITE.tiktok} target="_blank" rel="noopener">TikTok</a></li>
+      <li><a href={SITE.facebook} target="_blank" rel="noopener">Facebook</a></li>
+    </ul>
+  </div>
+</footer>
+
+<style>
+  .ftr { background: var(--canela); color: #F6E9E1; margin-top: auto; }
+  .ftr a { text-decoration: none; }
+  .ftr a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .ftr__top { display: grid; gap: 40px; padding-block: 56px 40px; }
+  @media (min-width: 900px) { .ftr__top { grid-template-columns: 280px 1fr; gap: 64px; } }
+  .ftr__brand img { width: 225px; border-radius: var(--r-sm); }
+  .ftr__cols { display: grid; gap: 32px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .ftr__h { font-family: var(--display); font-size: var(--t-lg); color: #fff; margin-bottom: 12px; }
+  .ftr ul { list-style: none; padding: 0; display: grid; gap: 8px; }
+  .ftr address { font-style: normal; margin-bottom: 8px; }
+  .ftr__wa { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.12); font-weight: 600; }
+  .ftr__wa:hover { background: rgba(255,255,255,.2); text-decoration: none !important; }
+  .ftr__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 20px 28px; border-top: 1px solid rgba(255,255,255,.18); font-size: var(--t-sm); }
+  .ftr__social { display: flex !important; gap: 20px !important; }
+</style>

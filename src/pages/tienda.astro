@@ -1,0 +1,23 @@
+---
+import Base from "../layouts/Base.astro";
+import ShopGrid from "../components/ShopGrid.astro";
+import { products, NAV } from "../lib/catalog";
+
+const items = products.filter((p) => p.type !== "Talleres");
+const filters = NAV.filter((n) => n.id !== "talleres").map((n) => ({ id: n.id, label: n.title, kind: "group" as const }));
+---
+<Base title="Tienda" description="Todos los insumos de Mi Velería: ceras, fragancias, moldes de silicona, envases, colorantes, pabilos, herramientas y decoración para hacer velas.">
+  <div class="wrap page">
+    <nav aria-label="Ruta de navegación"><ol class="crumbs"><li><a href="/">Inicio</a></li><li aria-current="page">Tienda</li></ol></nav>
+    <header class="page__head">
+      <h1 class="h-xl">Toda la tienda</h1>
+      <p class="muted">Ceras, fragancias, moldes, envases y herramientas. Todo lo que usamos en nuestros talleres, para que lo uses en tu casa o en tu emprendimiento.</p>
+    </header>
+    <ShopGrid items={items} filters={filters} />
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: 20px 80px; }
+  .page__head { display: grid; gap: 10px; margin: 20px 0 28px; max-width: 64ch; }
+</style>

@@ -1,0 +1,104 @@
+---
+import Base from "../layouts/Base.astro";
+import WaIcon from "../components/WaIcon.astro";
+import { workshops, productUrl, img, srcset, money, SITE, siteImg, siteSrcset } from "../lib/catalog";
+
+const base = workshops.find((w) => w.handle === "taller-base-de-velas-artesanales");
+const others = workshops.filter((w) => w !== base);
+const steps = [
+  ["Reserva tu cupo", "Compra el taller aquí o escríbenos por WhatsApp. Te confirmamos fecha y hora."],
+  ["Llega al Studio", "En La Alquería, Bogotá. Tu puesto te espera con materiales y herramientas."],
+  ["Crea con acompañamiento", "Teoría y práctica en grupo pequeño, con atención cercana durante toda la clase."],
+  ["Llévate tus velas", "Sales con tus piezas terminadas y lo necesario para seguir creando en casa."],
+];
+---
+<Base title="Talleres de velas en Bogotá" description="Talleres presenciales de velas artesanales en Bogotá: taller base desde $98.000, velas tipo postre, aromáticas, gel y coctelería, yeso y cemento, y ediciones de temporada. Materiales incluidos.">
+  <section class="whero">
+    <div class="wrap whero__grid">
+      <div>
+        <nav aria-label="Ruta de navegación"><ol class="crumbs"><li><a href="/">Inicio</a></li><li aria-current="page">Talleres</li></ol></nav>
+        <h1 class="display whero__title">Aprende a hacer velas en Bogotá</h1>
+        <p class="lede">Talleres presenciales con tu propio puesto, tus propias herramientas y todos los materiales incluidos. Teoría y práctica para crear desde la primera vela.</p>
+        <div class="whero__ctas">
+          {base && <a class="btn btn--primary" href={productUrl(base)}>Empezar por el Taller Base</a>}
+          <a class="btn btn--outline" href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent("Hola Mi Velería, quiero información sobre los talleres.")}`} target="_blank" rel="noopener"><WaIcon /> Consultar fechas</a>
+        </div>
+      </div>
+      <img class="whero__img" src={siteImg("C81C3094-377A-447A-9F1A-10DF283119D6_3.jpg", 1200)} srcset={siteSrcset("C81C3094-377A-447A-9F1A-10DF283119D6_3.jpg", [600, 900, 1200, 1600])} sizes="(min-width: 960px) 50vw, 100vw" alt="Puestos de trabajo del Studio listos para un taller" width="1200" height="812" fetchpriority="high" />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h-xl wlist__title">Elige tu taller</h2>
+      <ul class="wlist">
+        {[base, ...others].filter(Boolean).map((w) => (
+          <li class="wcard">
+            <a class="wcard__img" href={productUrl(w!)} tabindex="-1" aria-hidden="true">
+              <img src={img(w!.images[0]?.src, 720)} srcset={srcset(w!.images[0]?.src, [360, 540, 720, 960])} sizes="(min-width: 900px) 30vw, 100vw" alt="" width="720" height="720" loading="lazy" decoding="async" />
+              {w === base && <span class="badge badge--new wcard__badge">Para empezar</span>}
+              {w!.onSale && <span class="badge badge--sale wcard__badge">Precio especial</span>}
+            </a>
+            <div class="wcard__body">
+              <h3 class="h-lg"><a href={productUrl(w!)}>{w!.title}</a></h3>
+              <p class="wcard__req">{w!.needsBase ? "Requiere haber tomado el Taller Base" : "No necesitas experiencia previa"}</p>
+              <p class="muted wcard__ex">{w!.summary}</p>
+              <p class="wcard__price">
+                <strong>{money(w!.priceMin)}</strong>
+                {w!.onSale && <s>{money(w!.variants[0].compare!)}</s>}
+              </p>
+              <a class="btn btn--dark btn--sm" href={productUrl(w!)}>Ver detalles y reservar</a>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section how">
+    <div class="wrap">
+      <h2 class="h-xl">Así funciona</h2>
+      <ol class="how__list">
+        {steps.map(([t, d], i) => (
+          <li>
+            <span class="how__n display" aria-hidden="true">{i + 1}</span>
+            <h3 class="how__t">{t}</h3>
+            <p class="muted">{d}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .whero { padding-block: 20px clamp(40px, 6vw, 72px); }
+  .whero__grid { display: grid; gap: 32px; align-items: center; }
+  @media (min-width: 960px) { .whero__grid { grid-template-columns: 1fr 1fr; gap: 56px; } }
+  .whero__title { font-size: var(--t-3xl); line-height: 1.02; margin: 20px 0 18px; max-width: 12ch; }
+  .whero__ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .whero__img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-lg); background: var(--roble-claro); }
+  .wlist__title { margin-bottom: 32px; }
+  .wlist { list-style: none; padding: 0; display: grid; gap: 40px 24px; }
+  @media (min-width: 700px) { .wlist { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1050px) { .wlist { grid-template-columns: repeat(3, 1fr); } }
+  .wcard { display: flex; flex-direction: column; gap: 16px; }
+  .wcard__img { position: relative; display: block; border-radius: var(--r-lg); overflow: hidden; }
+  .wcard__img img { width: 100%; aspect-ratio: 1; object-fit: cover; transition: transform .6s var(--ease); }
+  .wcard__img:hover img { transform: scale(1.03); }
+  .wcard__badge { position: absolute; top: 12px; left: 12px; }
+  .wcard__body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; flex: 1; }
+  .wcard__body h3 a { text-decoration: none; }
+  .wcard__body h3 a:hover { text-decoration: underline; }
+  .wcard__req { font-size: var(--t-sm); font-weight: 600; color: var(--canela); }
+  .wcard__ex { font-size: var(--t-sm); }
+  .wcard__price { display: flex; gap: 10px; align-items: baseline; margin-top: auto; padding-top: 6px; }
+  .wcard__price strong { font-family: var(--display); font-size: var(--t-xl); }
+  .wcard__price s { color: var(--tinta-suave); }
+  .how { background: var(--arena); }
+  .how__list { list-style: none; padding: 0; display: grid; gap: 28px; margin-top: 32px; }
+  @media (min-width: 800px) { .how__list { grid-template-columns: repeat(4, 1fr); } }
+  .how__list li { display: grid; gap: 8px; align-content: start; padding-top: 18px; border-top: 1.5px solid var(--cacao); }
+  .how__n { font-size: 2.25rem; color: var(--canela); line-height: 1; }
+  .how__t { font-weight: 700; font-size: var(--t-md); }
+</style>

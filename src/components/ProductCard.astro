@@ -1,0 +1,56 @@
+---
+import { type Product, img, srcset, money, productUrl, groupsOf } from "../lib/catalog";
+interface Props { p: Product; eager?: boolean; sizes?: string }
+const { p, eager = false, sizes = "(min-width: 1100px) 290px, (min-width: 760px) 31vw, 46vw" } = Astro.props;
+const v = p.variants.find((x) => x.available) ?? p.variants[0];
+const sale = v.compare && v.compare > v.price;
+const pct = sale ? Math.round((1 - v.price / v.compare!) * 100) : 0;
+const isNew = Date.now() - new Date(p.createdAt).getTime() < 1000 * 60 * 60 * 24 * 45;
+const cover = p.images[0];
+---
+<article
+  class:list={["pcard", { "pcard--out": !p.available }]}
+  data-product
+  data-title={p.title.toLowerCase()}
+  data-price={p.priceMin}
+  data-date={p.createdAt}
+  data-available={p.available ? "1" : "0"}
+  data-groups={groupsOf(p).join(" ")}
+  data-collections={p.collections.join(" ")}
+>
+  <div class="pcard__media">
+    {cover ? (
+      <img
+        src={img(cover.src, 480)}
+        srcset={srcset(cover.src, [240, 360, 480, 720])}
+        sizes={sizes}
+        alt={p.title}
+        width="480"
+        height="480"
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+      />
+    ) : (
+      <span class="pcard__noimg" aria-hidden="true"></span>
+    )}
+    <div class="pcard__badges">
+      {!p.available && <span class="badge badge--out">Agotado</span>}
+      {p.available && sale && <span class="badge badge--sale">-{pct}%</span>}
+      {p.available && !sale && isNew && <span class="badge badge--new">Nuevo</span>}
+    </div>
+  </div>
+  <div class="pcard__body">
+    <a class="pcard__title" href={productUrl(p)}>{p.title}</a>
+    {p.variants.length > 1 && <p class="pcard__meta">{p.variants.length} opciones{p.option ? ` de ${p.option.toLowerCase()}` : ""}</p>}
+    <p class="pcard__price">
+      {p.priceMin !== p.priceMax && <span class="pcard__from">Desde</span>}
+      <span>{money(p.priceMin)}</span>
+      {sale && <s>{money(v.compare!)}</s>}
+    </p>
+  </div>
+</article>
+
+<style>
+  .pcard__from { font-weight: 400; font-size: var(--t-sm); color: var(--tinta-suave); }
+  .pcard__noimg { display: block; width: 100%; height: 100%; background: linear-gradient(135deg, var(--arena), var(--roble-claro)); }
+</style>

@@ -1,0 +1,18 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Página no encontrada">
+  <div class="wrap nf">
+    <h1 class="h-xl">Esta página no existe</h1>
+    <p class="muted">Puede que el producto ya no esté en la tienda o que el enlace tenga un error. Busca lo que necesitas o vuelve al inicio.</p>
+    <div class="nf__ctas">
+      <button class="btn btn--primary" type="button" data-open-search>Buscar productos</button>
+      <a class="btn btn--outline" href="/">Ir al inicio</a>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .nf { padding-block: 96px 120px; display: grid; gap: 16px; justify-items: start; max-width: 60ch; }
+  .nf__ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+</style>

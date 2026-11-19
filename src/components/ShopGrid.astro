@@ -1,0 +1,165 @@
+---
+import ProductCard from "./ProductCard.astro";
+import type { Product } from "../lib/catalog";
+interface Props {
+  items: Product[];
+  filters?: { id: string; label: string; kind: "group" | "collection" }[];
+  pageSize?: number;
+}
+const { items, filters = [], pageSize = 24 } = Astro.props;
+---
+<div class="shop" data-shop data-page-size={pageSize}>
+  <div class="shop__bar">
+    {filters.length > 0 && (
+      <div class="chips" role="group" aria-label="Filtrar por categoría">
+        <button class="chip" type="button" aria-pressed="true" data-filter="">Todo</button>
+        {filters.map((f) => (
+          <button class="chip" type="button" aria-pressed="false" data-filter={f.id} data-kind={f.kind}>{f.label}</button>
+        ))}
+      </div>
+    )}
+    <div class="shop__tools">
+      <label class="shop__search">
+        <span class="sr-only">Buscar en esta lista</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+        <input type="search" placeholder="Buscar en esta lista" data-shop-q />
+      </label>
+      <label class="shop__check">
+        <input type="checkbox" data-shop-avail />
+        <span>Solo disponibles</span>
+      </label>
+      <label class="shop__sort">
+        <span class="sr-only">Ordenar</span>
+        <select data-shop-sort>
+          <option value="">Destacados</option>
+          <option value="nuevos">Más nuevos</option>
+          <option value="precio-asc">Precio: menor a mayor</option>
+          <option value="precio-desc">Precio: mayor a menor</option>
+          <option value="nombre">Nombre A–Z</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <p class="shop__count muted" data-shop-count aria-live="polite">{items.length} productos</p>
+
+  <ul class="grid-products" data-shop-list>
+    {items.map((p, i) => <li data-i={i}><ProductCard p={p} eager={i < 4} /></li>)}
+  </ul>
+
+  <div class="shop__empty" data-shop-empty hidden>
+    <p class="h-lg">No hay productos con esos filtros</p>
+    <p class="muted">Quita la búsqueda o la opción «Solo disponibles» para ver más resultados.</p>
+    <button class="btn btn--outline btn--sm" type="button" data-shop-reset>Quitar filtros</button>
+  </div>
+
+  <div class="shop__more">
+    <button class="btn btn--outline" type="button" data-shop-more hidden>Ver más productos</button>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-shop]").forEach((shop) => {
+    const pageSize = Number(shop.dataset.pageSize) || 24;
+    const list = shop.querySelector<HTMLElement>("[data-shop-list]")!;
+    const rows = [...list.children] as HTMLElement[];
+    const q = shop.querySelector<HTMLInputElement>("[data-shop-q]")!;
+    const avail = shop.querySelector<HTMLInputElement>("[data-shop-avail]")!;
+    const sort = shop.querySelector<HTMLSelectElement>("[data-shop-sort]")!;
+    const chips = [...shop.querySelectorAll<HTMLButtonElement>("[data-filter]")];
+    const more = shop.querySelector<HTMLButtonElement>("[data-shop-more]")!;
+    const count = shop.querySelector("[data-shop-count]")!;
+    const empty = shop.querySelector<HTMLElement>("[data-shop-empty]")!;
+    const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    let filter = "";
+    let kind = "group";
+    let limit = pageSize;
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("q")) q.value = params.get("q")!;
+    if (params.get("orden")) sort.value = params.get("orden")!;
+    const g = params.get("grupo") || params.get("coleccion");
+    if (g) {
+      const chip = chips.find((c) => c.dataset.filter === g);
+      if (chip) { filter = g; kind = chip.dataset.kind || "group"; }
+    }
+
+    function apply(resetLimit = true) {
+      if (resetLimit) limit = pageSize;
+      const words = norm(q.value.trim()).split(/\s+/).filter(Boolean);
+      const card = (li: HTMLElement) => li.querySelector<HTMLElement>("[data-product]")!;
+      let visible = rows.filter((li) => {
+        const d = card(li).dataset;
+        if (avail.checked && d.available !== "1") return false;
+        if (filter) {
+          const bag = (kind === "collection" ? d.collections : d.groups) || "";
+          if (!bag.split(" ").includes(filter)) return false;
+        }
+        if (words.length && !words.every((w) => norm(d.title || "").includes(w))) return false;
+        return true;
+      });
+      const by = sort.value;
+      const num = (li: HTMLElement, k: string) => Number(card(li).dataset[k]);
+      visible = visible.sort((a, b) => {
+        if (by === "precio-asc") return num(a, "price") - num(b, "price");
+        if (by === "precio-desc") return num(b, "price") - num(a, "price");
+        if (by === "nombre") return (card(a).dataset.title || "").localeCompare(card(b).dataset.title || "");
+        if (by === "nuevos") return +new Date(card(b).dataset.date!) - +new Date(card(a).dataset.date!);
+        // Destacados: disponibles primero, luego el orden de la tienda
+        return num(b, "available") - num(a, "available") || Number(a.dataset.i) - Number(b.dataset.i);
+      });
+      rows.forEach((li) => (li.hidden = true));
+      visible.forEach((li, i) => {
+        list.append(li);
+        li.hidden = i >= limit;
+      });
+      count.textContent = `${visible.length} ${visible.length === 1 ? "producto" : "productos"}`;
+      more.hidden = visible.length <= limit;
+      more.textContent = `Ver más productos (${visible.length - limit} más)`;
+      empty.hidden = visible.length > 0;
+      chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.filter === filter)));
+
+      const url = new URL(location.href);
+      url.searchParams.delete("grupo");
+      url.searchParams.delete("coleccion");
+      if (filter) url.searchParams.set(kind === "collection" ? "coleccion" : "grupo", filter);
+      q.value ? url.searchParams.set("q", q.value) : url.searchParams.delete("q");
+      sort.value ? url.searchParams.set("orden", sort.value) : url.searchParams.delete("orden");
+      history.replaceState(null, "", url);
+    }
+
+    chips.forEach((c) =>
+      c.addEventListener("click", () => {
+        filter = c.dataset.filter || "";
+        kind = c.dataset.kind || "group";
+        apply();
+      })
+    );
+    let t: number | undefined;
+    q.addEventListener("input", () => { clearTimeout(t); t = window.setTimeout(() => apply(), 120); });
+    avail.addEventListener("change", () => apply());
+    sort.addEventListener("change", () => apply());
+    more.addEventListener("click", () => { limit += pageSize; apply(false); });
+    shop.querySelector("[data-shop-reset]")!.addEventListener("click", () => {
+      q.value = ""; avail.checked = false; filter = ""; apply();
+    });
+    apply();
+  });
+</script>
+
+<style>
+  .shop__bar { display: grid; gap: 16px; margin-bottom: 18px; }
+  .shop__tools { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .shop__search { flex: 1 1 240px; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--linea-fuerte); background: #fff; }
+  .shop__search:focus-within { border-color: var(--cacao); }
+  .shop__search svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; flex: none; color: var(--tinta-suave); }
+  .shop__search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; height: 100%; }
+  .shop__check { display: inline-flex; align-items: center; gap: 8px; font-size: var(--t-sm); cursor: pointer; }
+  .shop__check input { width: 18px; height: 18px; accent-color: var(--canela); }
+  .shop__sort select { height: 44px; padding: 0 36px 0 14px; border-radius: 999px; border: 1.5px solid var(--linea-fuerte); background: #fff; font-size: var(--t-sm); }
+  .shop__count { font-size: var(--t-sm); margin-bottom: 20px; }
+  .shop__empty { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 48px 16px; }
+  .shop__empty[hidden] { display: none; }
+  .shop__more { display: flex; justify-content: center; margin-top: 40px; }
+  [data-shop-list] > li[hidden] { display: none; }
+</style>
